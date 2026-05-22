@@ -8,13 +8,32 @@ class Concert:
             hours=dur["hours"], minutes=dur["mins"], seconds=dur["secs"]
         )
         # Stack
-        self.attendees = [
-            {"ticket": 1, "name": "Tester 1", "entryTime": None, "exitTime": None},
-            {"ticket": 1, "name": "Tester 1", "entryTime": None, "exitTime": None},
-        ]
+        self.attendees = []
 
     def pushAttendee(self):
-        pass
+        name = input("Enter your name: ")
+
+        next_ticket = self.attendees[-1]["ticket"] + 1 if self.attendees else 1
+
+        new_attendee = {
+            "ticket": next_ticket,
+            "name": name,
+            "entryTime": dt.datetime.now(), 
+            "exitTime": None,
+        }
+
+        already_in = next(
+            (a for a in self.attendees if a["name"] == name and a["entryTime"] is not None),
+            None
+        )
+
+        if already_in:
+            print(f"[⤐ ENTRY DENIED ❌ ⬷] {name} has already entered. Ticket #{already_in['ticket']}.")
+            return None
+
+        self.attendees.append(new_attendee)
+        print(f"[⤐ ENTRY SUCCESS ✅ ⬷] Welcome, {name}! Ticket #{next_ticket} | Entry: {new_attendee['entryTime'].strftime('%H:%M:%S')}")
+        return new_attendee
 
     def popAttendee(self):
 
