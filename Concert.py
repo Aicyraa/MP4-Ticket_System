@@ -60,7 +60,20 @@ class Concert:
         pass
 
     def displayAttendees(self):
-        pass
+        if not self.attendees:
+            print("Venue is empty.")
+            return
+
+        print(f"\n{'#':<5} {'Ticket':<12} {'Name':<15} {'Entry Time'}")
+        print("-" * 50)
+        for i, a in enumerate(reversed(self.attendees)):
+            tag = " <- TOP" if i == 0 else ""
+            print(f"{i+1:<5} {a['ticket']:<12} {a['name']:<15} {a['entryTime'].strftime('%I:%M %p')}{tag}")
+        print("-" * 50)
+        print(f"Total inside: {len(self.attendees)}\n")
+
 
     def generateAttendanceRep(self):
         pass
+    
+  
