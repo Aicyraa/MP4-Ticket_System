@@ -24,4 +24,7 @@ Our group entry for DASTRUC
       # Windows (open CMD then go to the project's directory)
       .venv\Scripts\Activate
 
+   # Step 4 (install packages)
+
+      pip3 or pip install -r requirements.txt
 ```

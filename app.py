@@ -1,6 +1,9 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+
+from utils import fmt, build_df
+
 from datetime import datetime, timedelta
 import sys
 import os
@@ -15,30 +18,6 @@ if "concert" not in st.session_state:
     st.session_state.concert = None
 
 # ────────────────────────────────────────────────────────────────────────────
-# Helpers
-# ────────────────────────────────────────────────────────────────────────────
-def fmt(seconds):
-    return str(timedelta(seconds=int(seconds)))
-
-def build_df(concert):
-    rows = []
-    for rec in concert.record:
-        end = rec["exitTime"] or datetime.now()
-        dur = (end - rec["entryTime"]).total_seconds() if rec["entryTime"] else 0
-        rows.append({
-            "Ticket":    rec["ticketID"],
-            "Name":      rec["name"],
-            "Entry":     rec["entryTime"].strftime("%H:%M:%S") if rec["entryTime"] else "N/A",
-            "Exit":      rec["exitTime"].strftime("%H:%M:%S") if rec["exitTime"] else "Still inside",
-            "Duration":  fmt(dur),
-            "Status":    "Inside" if rec["exitTime"] is None else "Exited",
-            "_dur_sec":  dur,
-            "_exit_dt":  rec["exitTime"],
-            "_entry_dt": rec["entryTime"],
-        })
-    return pd.DataFrame(rows)
-
-# ────────────────────────────────────────────────────────────────────────────
 # SCREEN 1 — Concert Setup
 # ────────────────────────────────────────────────────────────────────────────
 if st.session_state.concert is None:
@@ -46,8 +25,8 @@ if st.session_state.concert is None:
     st.subheader("Set up a new concert")
 
     c1, c2, c3 = st.columns(3)
-    h = c1.number_input("Hours",   min_value=0, max_value=23, value=2)
-    m = c2.number_input("Minutes", min_value=0, max_value=59, value=30)
+    h = c1.number_input("Hours",   min_value=0, max_value=23, value=0)
+    m = c2.number_input("Minutes", min_value=0, max_value=59, value=0)
     s = c3.number_input("Seconds", min_value=0, max_value=59, value=0)
 
     if st.button("Create Concert Entry", use_container_width=True):
