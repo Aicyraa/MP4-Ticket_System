@@ -177,7 +177,7 @@ if st.session_state.concert is None:
         m = c2.number_input("Minutes", min_value=0, max_value=59, value=0)
         s = c3.number_input("Seconds", min_value=0, max_value=59, value=0)
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("Create Concert →", use_container_width=True):
+        if st.button("Create Concert →", width='stretch'):
             if h == 0 and m == 0 and s == 0:
                 st.error("Duration must be greater than zero.")
             else:
@@ -205,7 +205,7 @@ with h_left:
     )
 with h_right:
     st.markdown("<div style='height:18px'></div>", unsafe_allow_html=True)
-    if st.button("+ New Concert", use_container_width=True):
+    if st.button("+ New Concert", width='stretch'):
         st.session_state.concert = None
         st.session_state.action_msg = None
         st.rerun()
@@ -268,11 +268,11 @@ with tab1:
             key="name_input",
         )
     with pc:
-        push_clicked = st.button("Push", use_container_width=True)
+        push_clicked = st.button("Push", width='stretch')
     with oc:
-        pop_clicked = st.button("Pop", use_container_width=True)
+        pop_clicked = st.button("Pop", width='stretch')
     with kc:
-        peek_clicked = st.button("Peek", use_container_width=True)
+        peek_clicked = st.button("Peek", width='stretch')
 
     if push_clicked:
         stripped = name_input.strip()
@@ -327,7 +327,7 @@ with tab1:
             df = build_df(concert)
             st.dataframe(
                 df[["Ticket", "Name", "Entry", "Exit", "Status"]],
-                use_container_width=True,
+                width='stretch',
                 hide_index=True,
             )
     with rc:
@@ -346,7 +346,7 @@ with tab1:
                 for a in reversed(concert.attendees)
             ]
             st.dataframe(
-                pd.DataFrame(stack_data), use_container_width=True, hide_index=True
+                pd.DataFrame(stack_data), width='stretch', hide_index=True
             )
 
 
@@ -424,7 +424,7 @@ with tab2:
             box_title("Duration Breakdown")
             st.dataframe(
                 df[["Ticket", "Name", "Entry", "Exit", "Duration"]],
-                use_container_width=True,
+                width='stretch',
                 hide_index=True,
             )
 
@@ -458,7 +458,7 @@ with tab3:
                     for tid, name, v in violations
                 ]
             )
-            st.dataframe(vdf, use_container_width=True, hide_index=True)
+            st.dataframe(vdf, width='stretch', hide_index=True)
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -486,7 +486,7 @@ with tab4:
         box_title("Entry & Exit Summary")
         st.dataframe(
             df[["Ticket", "Name", "Entry", "Exit", "Duration", "Status"]],
-            use_container_width=True,
+            width='stretch',
             hide_index=True,
         )
 
@@ -545,5 +545,5 @@ with tab4:
             data=csv,
             file_name=f"attendance_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
             mime="text/csv",
-            use_container_width=True,
+            width='stretch',
         )

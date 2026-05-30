@@ -4,9 +4,10 @@ from utils import (
     print_message,
     print_success,
     print_error,
+    print_header,
     display_durations,
     display_violations,
-    fmt,
+    fmt
 )
 
 
@@ -24,9 +25,7 @@ class Concert(Record):
         - Streamlit: pass name directly to skip input().
         """
         if name is None:
-            name = input(
-                ">>>  Enter attendee name (or press Enter to cancel): "
-            ).strip()
+            name = input(">>>  Enter attendee name (or press Enter to cancel): ").strip()
 
         if not name:
             return print_error("Push cancelled: name cannot be empty.")
@@ -84,6 +83,7 @@ class Concert(Record):
             delta = timedelta(seconds=int((end - rec["entryTime"]).total_seconds()))
             durations.append((rec["ticketID"], rec["name"], delta))
 
+        print_header("Attendance Durations")
         display_durations(durations)
         return durations
 
@@ -104,6 +104,7 @@ class Concert(Record):
             elif rec["exitTime"] and attended < self.duration:
                 violations.append((rec["ticketID"], rec["name"], "early exit"))
 
+        print_header("Rule Violations")
         display_violations(violations)
         return violations
 
@@ -111,15 +112,14 @@ class Concert(Record):
         if self._isEmpty():
             return print_error("Venue is empty.")
 
-        print_success(f"\n{'#':<5} {'Ticket':<12} {'Name':<15} {'Entry Time'}")
-        print("-" * 50)
+        print_header("Current Attendees")
+        print_message(f"\n  {'#':<5} {'Ticket':<12} {'Name':<15} {'Entry Time'}", prefix=False)
+        print_message("  " + "-" * 45, prefix=False)
         for i, a in enumerate(reversed(self.attendees)):
-            entry_time = (
-                a["entryTime"].strftime("%I:%M %p") if a["entryTime"] else "N/A"
-            )
-            print(f"{i+1:<5} {a['ticketID']:<12} {a['name']:<15} {entry_time}")
-        print("-" * 50)
-        print_success(f"Total inside: {len(self.attendees)}\n")
+            entry_time = a['entryTime'].strftime('%I:%M %p') if a['entryTime'] else "N/A"
+            print_message(f"  {i+1:<5} {a['ticketID']:<12} {a['name']:<15} {entry_time}", prefix=False)
+        print_message("  " + "-" * 45, prefix=False)
+        print_success(f"  Total inside: {len(self.attendees)}\n")
 
     def generateAttendanceReport(self):
         if not self.record:
@@ -129,68 +129,52 @@ class Concert(Record):
         still_inside = sum(1 for r in self.record if r["exitTime"] is None)
         exited = total - still_inside
 
-        durations = []
-        for rec in self.record:
-            if rec["entryTime"] is None:
-                continue
-            end = rec["exitTime"] or datetime.now()
-            durations.append((end - rec["entryTime"]).total_seconds())
+        # getAttendanceDuration returns [(ticketID, name, timedelta), ...]
+        # Extract raw seconds from each tuple for math (avg, min, max)
+        duration_tuples = self.getAttendanceDuration()
+        dur_secs = [d.total_seconds() for _, _, d in duration_tuples] if duration_tuples else []
 
-        sep = "=" * 55
-        print(f"\n{sep}")
-        print("        CONCERT ATTENDANCE REPORT")
-        print(sep)
+        violation_tuples = self.detectRuleViolations()
 
-        print(f"\n  Total registered : {total}")
-        print(f"  Still inside     : {still_inside}")
-        print(f"  Already exited   : {exited}")
+        print_header("Concert Attendance Report")
 
-        print(f"\n  {'Ticket':<8} {'Name':<20} {'Entry':<12} {'Exit'}")
-        print("  " + "-" * 50)
+        # ── Summary counts ────────────────────────────────────────────────────
+        print_success(f"\n  Total registered : {total}", prefix=False)
+        print_success(f"  Still inside     : {still_inside}", prefix=False)
+        print_success(f"  Already exited   : {exited}", prefix=False)
+
+        # ── Attendee table ────────────────────────────────────────────────────
+        print_message(f"\n  {'Ticket':<8} {'Name':<20} {'Entry':<12} {'Exit'}", prefix=False)
+        print_message("  " + "-" * 50, prefix=False)
         for rec in self.record:
             entry = rec["entryTime"].strftime("%H:%M:%S") if rec["entryTime"] else "N/A"
-            exit_ = (
-                rec["exitTime"].strftime("%H:%M:%S")
-                if rec["exitTime"]
-                else "Still inside"
-            )
-            print(f"  {rec['ticketID']:<8} {rec['name']:<20} {entry:<12} {exit_}")
+            exit_ = rec["exitTime"].strftime("%H:%M:%S") if rec["exitTime"] else "Still inside"
+            print_message(f"  {rec['ticketID']:<8} {rec['name']:<20} {entry:<12} {exit_}", prefix=False)
 
-        if durations:
-            print(f"\n  Average stay  : {fmt(sum(durations) / len(durations))}")
-            print(f"  Longest stay  : {fmt(max(durations))}")
-            print(f"  Shortest stay : {fmt(min(durations))}")
+        # ── Duration stats ────────────────────────────────────────────────────
+        if dur_secs:
+            print_success(f"\n  Average stay  : {fmt(sum(dur_secs) / len(dur_secs))}", prefix=False)
+            print_success(f"  Longest stay  : {fmt(max(dur_secs))}", prefix=False)
+            print_success(f"  Shortest stay : {fmt(min(dur_secs))}", prefix=False)
 
-        violations = []
-        for rec in self.record:
-            if rec["entryTime"] is None:
-                continue
-            end = rec["exitTime"] or datetime.now()
-            attended = end - rec["entryTime"]
-            if attended > self.duration:
-                violations.append(
-                    f"  Ticket {rec['ticketID']} | {rec['name']}: Overstay"
-                )
-            elif rec["exitTime"] and attended < self.duration:
-                violations.append(
-                    f"  Ticket {rec['ticketID']} | {rec['name']}: Early Exit"
-                )
+        # ── Violations ────────────────────────────────────────────────────────
+        if violation_tuples:
+            print_error(f"\n  Violations ({len(violation_tuples)} found)", prefix=False)
+            for tid, name, vtype in violation_tuples:
+                print_error(f"  Ticket {tid} | {name}: {vtype.title()}", prefix=False)
+        else:
+            print_success(f"\n  Violations (0 found)", prefix=False)
+            print_success("  None detected.", prefix=False)
 
-        print(f"\n  Violations ({len(violations)} found)")
-        for v in violations:
-            print(v)
-        if not violations:
-            print("  None detected.")
-
-        print(f"\n{sep}\n")
+        print_message("")
 
         # Return structured data for Streamlit
         return {
             "total": total,
             "still_inside": still_inside,
             "exited": exited,
-            "durations": durations,
-            "violations": violations,
+            "durations": dur_secs,
+            "violations": violation_tuples,
         }
 
     # -------------------------
@@ -207,3 +191,58 @@ class Concert(Record):
             attendee["entryTime"],
             attendee["exitTime"],
         )
+
+  
+    def generateAttendanceReport(self):
+        if not self.record:
+            return print_error("No attendance data available for the report.")
+ 
+        total = len(self.record)
+        still_inside = sum(1 for r in self.record if r["exitTime"] is None)
+        exited = total - still_inside
+
+        duration_tuples = self.getAttendanceDuration()
+        dur_secs = [d.total_seconds() for _, _, d in duration_tuples] if duration_tuples else []
+ 
+        violation_tuples = self.detectRuleViolations()
+ 
+        print_header("Concert Attendance Report")
+ 
+        # ── Summary counts ────────────────────────────────────────────────────
+        print_success(f"\n  Total registered : {total}", prefix=False)
+        print_success(f"  Still inside     : {still_inside}", prefix=False)
+        print_success(f"  Already exited   : {exited}", prefix=False)
+ 
+        # ── Attendee table ────────────────────────────────────────────────────
+        print_message(f"\n  {'Ticket':<8} {'Name':<20} {'Entry':<12} {'Exit'}", prefix=False)
+        print_message("  " + "-" * 50, prefix=False)
+        for rec in self.record:
+            entry = rec["entryTime"].strftime("%H:%M:%S") if rec["entryTime"] else "N/A"
+            exit_ = rec["exitTime"].strftime("%H:%M:%S") if rec["exitTime"] else "Still inside"
+            print_message(f"  {rec['ticketID']:<8} {rec['name']:<20} {entry:<12} {exit_}", prefix=False)
+ 
+        # ── Duration stats ────────────────────────────────────────────────────
+        if dur_secs:
+            print_success(f"\n  Average stay  : {fmt(sum(dur_secs) / len(dur_secs))}", prefix=False)
+            print_success(f"  Longest stay  : {fmt(max(dur_secs))}", prefix=False)
+            print_success(f"  Shortest stay : {fmt(min(dur_secs))}", prefix=False)
+ 
+        # ── Violations ────────────────────────────────────────────────────────
+        if violation_tuples:
+            print_error(f"\n  Violations ({len(violation_tuples)} found)", prefix=False)
+            for tid, name, vtype in violation_tuples:
+                print_error(f"  Ticket {tid} | {name}: {vtype.title()}", prefix=False)
+        else:
+            print_success(f"\n  Violations (0 found)", prefix=False)
+            print_success("  None detected.", prefix=False)
+ 
+        print_message("")
+ 
+        # Return structured data for Streamlit
+        return {
+            "total": total,
+            "still_inside": still_inside,
+            "exited": exited,
+            "durations": dur_secs,
+            "violations": violation_tuples,
+        }
